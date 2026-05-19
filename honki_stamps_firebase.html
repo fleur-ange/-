@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>21時から本気出す部 🌙</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+      background: #f5f4f0;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+      color: #1a1a18;
+    }
+
+    .header { text-align: center; margin-bottom: 1.25rem; }
+    .header h1 { font-size: 20px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+    .header p { font-size: 13px; color: #888780; }
+
+    .status-bar {
+      text-align: center;
+      font-size: 12px;
+      margin-bottom: 1rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      width: 100%;
+    }
+    .status-bar.connected { color: #3B6D11; background: #EAF3DE; }
+    .status-bar.disconnected { color: #A32D2D; background: #FCEBEB; }
+    .status-bar.loading { color: #888780; background: #f0ede6; }
+
+    /* YouTube セクション */
+    .youtube-section {
+      max-width: 480px;
+      margin: 0 auto 1.25rem;
+      background: #fff;
+      border: 1px solid #e8e6e0;
+      border-radius: 16px;
+      padding: 1rem;
+    }
+    .youtube-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a18;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .url-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .url-input {
+      flex: 1;
+      border: 1px solid #d0cec8;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1a18;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .url-input:focus { border-color: #EF9F27; }
+    .url-input::placeholder { color: #bbb; }
+    .play-btn {
+      background: #e00;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .play-btn:hover { background: #c00; }
+    .newtab-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px solid #d0cec8;
+      border-radius: 10px;
+      padding: 7px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #888780;
+      transition: background 0.15s;
+      display: none;
+    }
+    .newtab-btn.show { display: block; }
+    .newtab-btn:hover { background: #f5f4f0; color: #1a1a18; }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 */
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 8px;
+      display: none;
+    }
+    .video-wrap.show { display: block; }
+    .video-wrap iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
+    .bulk-start-area {
+      max-width: 480px;
+      margin: 0 auto 1.25rem;
+    }
+    .bulk-start-btn {
+      width: 100%;
+      background: #1a1a18;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .bulk-start-btn:hover { background: #333; }
+    .bulk-start-btn:active { transform: scale(0.98); }
+
+    .reward-banner {
+      background: #FAEEDA;
+      border: 1px solid #FAC775;
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .reward-banner.show { display: flex; animation: pop 0.4s ease; }
+    .reward-emoji { font-size: 28px; }
+    .reward-text { font-size: 14px; color: #412402; }
+    .reward-text strong { font-weight: 600; }
+
+    .member-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .member-card {
+      background: #fff;
+      border: 1.5px solid #e8e6e0;
+      border-radius: 16px;
+      padding: 1rem;
+      transition: border-color 0.3s;
+    }
+    .member-card.online  { border-color: #5cb85c; }
+    .member-card.offline { border-color: #e05c5c; }
+
+    .member-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .avatar-wrap { position: relative; flex-shrink: 0; }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+    }
+    .presence-dot {
+      position: absolute; bottom: 0; right: 0;
+      width: 11px; height: 11px;
+      border-radius: 50%; border: 2px solid #fff;
+      transition: background 0.3s;
+    }
+    .presence-dot.online  { background: #5cb85c; animation: pulse-green 2s infinite; }
+    .presence-dot.offline { background: #e05c5c; }
+
+    @keyframes pulse-green {
+      0%,100% { box-shadow: 0 0 0 0 rgba(92,184,92,0.5); }
+      50%      { box-shadow: 0 0 0 4px rgba(92,184,92,0); }
+    }
+
+    .member-info { flex: 1; min-width: 0; }
+    .member-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .member-name { font-size: 15px; font-weight: 600; color: #1a1a18; }
+    .member-status { font-size: 11px; color: #888780; margin-top: 2px; }
+
+    .toggle-switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #e05c5c; border-radius: 22px; cursor: pointer; transition: background 0.3s;
+    }
+    .toggle-slider:before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #5cb85c; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    .stamps { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+    .stamp {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; border: 1.5px dashed #ccc; color: #ccc;
+    }
+    .stamp.earned { border: none; background: #FAC775; animation: pop 0.35s ease; }
+    .stamp.earned-crown {
+      border: none;
+      background: linear-gradient(135deg, #f6d365, #fda085);
+      animation: pop 0.35s ease, glow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      80%  { transform: scale(1.2); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 4px rgba(253,160,133,0.4); }
+      to   { box-shadow: 0 0 12px rgba(253,160,133,0.9); }
+    }
+
+    .progress-bar { height: 5px; background: #f0ede6; border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+    .progress-fill { height: 100%; background: #EF9F27; border-radius: 3px; transition: width 0.1s linear; }
+
+    .btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .join-btn {
+      flex: 1; background: transparent; border: 1px solid #d0cec8;
+      border-radius: 10px; padding: 8px 4px; font-size: 12px; font-family: inherit;
+      cursor: pointer; color: #1a1a18;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .join-btn:hover:not(:disabled) { background: #f5f4f0; }
+    .join-btn:active:not(:disabled) { transform: scale(0.98); }
+    .join-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .join-btn.waiting { color: #BA7517; border-color: #FAC775; background: #fdf6e8; }
+    .join-btn.done    { color: #3B6D11; border-color: #97C459; background: #f2f9e8; }
+
+    .cancel-btn {
+      background: transparent; border: 1px solid #f09595;
+      border-radius: 10px; padding: 8px 8px; font-size: 12px;
+      font-family: inherit; cursor: pointer; color: #A32D2D;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .cancel-btn:hover { background: #fff0f0; }
+
+    .reset-individual-btn {
+      width: 100%; background: transparent; border: 1px solid #e8e6e0;
+      border-radius: 10px; padding: 5px 6px; font-size: 11px;
+      font-family: inherit; cursor: pointer; color: #aaa;
+      transition: background 0.15s, color 0.15s;
+    }
+    .reset-individual-btn:hover { background: #fff0f0; color: #A32D2D; border-color: #f09595; }
+
+    .timer-txt { font-size: 11px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🌙 21時から本気出す部</h1>
+    <p>参加から3分でスタンプ獲得 ・ 5個でご褒美！👑</p>
+  </div>
+
+  <div id="status-bar" class="status-bar loading">接続中...</div>
+
+  <!-- YouTube セクション -->
+  <div class="youtube-section">
+    <h3>▶️ YouTube</h3>
+    <div class="url-row">
+      <input class="url-input" id="yt-url" type="text" placeholder="YouTubeのURLを貼り付け" />
+      <button class="play-btn" onclick="loadVideo()">再生</button>
+    </div>
+    <div class="video-wrap" id="video-wrap">
+      <iframe id="yt-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+    <button class="newtab-btn" id="newtab-btn" onclick="openNewTab()">🔗 別タブで開く</button>
+  </div>
+
+  <div class="bulk-start-area">
+    <button class="bulk-start-btn" onclick="window.bulkStart()">🔥 まとめて本気トレ開始！</button>
+  </div>
+
+  <div id="reward-banner" class="reward-banner">
+    <span class="reward-emoji">👑</span>
+    <div class="reward-text"><strong id="reward-name"></strong>さんがご褒美ゲット！おめでとう🎉</div>
+  </div>
+
+  <div class="member-grid" id="member-grid"></div>
+
+  <script>
+    // YouTube URL → 埋め込みURL変換
+    let currentYtUrl = '';
+
+    function extractVideoId(url) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/shorts\/([^&\n?#]+)/
+      ];
+      for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
+    function loadVideo() {
+      const url = document.getElementById('yt-url').value.trim();
+      if (!url) return;
+      const id = extractVideoId(url);
+      if (!id) { alert('YouTubeのURLを正しく入力してください'); return; }
+      currentYtUrl = url;
+      const embedUrl = `https://www.youtube.com/embed/${id}?autoplay=1`;
+      document.getElementById('yt-iframe').src = embedUrl;
+      document.getElementById('video-wrap').classList.add('show');
+      document.getElementById('newtab-btn').classList.add('show');
+    }
+
+    function openNewTab() {
+      if (currentYtUrl) window.open(currentYtUrl, '_blank');
+    }
+
+    // Enterキーでも再生
+    document.getElementById('yt-url').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadVideo();
+    });
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCHeiK7IYCVZY94n3W9wZ9a4622JuMzSYQ",
+      authDomain: "honki-stamps.firebaseapp.com",
+      databaseURL: "https://honki-stamps-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "honki-stamps",
+      storageBucket: "honki-stamps.firebasestorage.app",
+      messagingSenderId: "142735001715",
+      appId: "1:142735001715:web:53307c7d1a6a0a17cb0206"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    const MEMBERS = [
+      { id: 0, name: "澤田", initials: "澤", bg: "#B5D4F4", fg: "#0C447C" },
+      { id: 1, name: "渡辺", initials: "渡", bg: "#F4C0D1", fg: "#72243E" },
+      { id: 2, name: "名田", initials: "名", bg: "#9FE1CB", fg: "#085041" },
+      { id: 3, name: "山田", initials: "山", bg: "#CECBF6", fg: "#3C3489" },
+    ];
+
+    const WAIT_MS    = 3 * 60 * 1000;
+    const MAX_STAMPS = 5;
+
+    let stamps    = [0, 0, 0, 0];
+    let presence  = [false, false, false, false];
+    let joinedAts = [null, null, null, null];
+    let tickTimers = [null, null, null, null];
+
+    const statusBar    = document.getElementById('status-bar');
+    const stampsRef    = ref(db, 'stamps');
+    const presenceRef  = ref(db, 'presence');
+    const joinedAtsRef = ref(db, 'joinedAts');
+
+    onValue(stampsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) stamps = data;
+      statusBar.textContent = '✅ リアルタイム同期中';
+      statusBar.className = 'status-bar connected';
+      render();
+    }, () => {
+      statusBar.textContent = '❌ 接続エラー';
+      statusBar.className = 'status-bar disconnected';
+    });
+
+    onValue(presenceRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) presence = data;
+      render();
+    });
+
+    onValue(joinedAtsRef, (snapshot) => {
+      const data = snapshot.val();
+      const prev = [...joinedAts];
+      joinedAts = data ? data : [null, null, null, null];
+      MEMBERS.forEach((_, i) => {
+        if (joinedAts[i] && !prev[i]) startTick(i);
+        if (!joinedAts[i] && tickTimers[i]) {
+          clearInterval(tickTimers[i]);
+          tickTimers[i] = null;
+        }
+      });
+      render();
+    });
+
+    function startTick(i) {
+      if (tickTimers[i]) clearInterval(tickTimers[i]);
+      tickTimers[i] = setInterval(() => {
+        if (!joinedAts[i]) { clearInterval(tickTimers[i]); tickTimers[i] = null; return; }
+        const elapsed = Date.now() - joinedAts[i];
+        if (elapsed >= WAIT_MS) {
+          clearInterval(tickTimers[i]); tickTimers[i] = null;
+          const newStamp = Math.min(MAX_STAMPS, (stamps[i] || 0) + 1);
+          stamps[i] = newStamp;
+          joinedAts[i] = null;
+          set(stampsRef, stamps);
+          set(joinedAtsRef, joinedAts);
+          render();
+          if (newStamp >= MAX_STAMPS) {
+            const banner = document.getElementById('reward-banner');
+            document.getElementById('reward-name').textContent = MEMBERS[i].name;
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 5000);
+          }
+          return;
+        }
+        const pct  = Math.min(100, elapsed / WAIT_MS * 100);
+        const prog = document.getElementById(`prog-${i}`);
+        const btn  = document.getElementById(`btn-${i}`);
+        const remain = Math.max(0, WAIT_MS - elapsed);
+        const mins   = Math.floor(remain / 60000);
+        const secs   = Math.floor((remain % 60000) / 1000);
+        if (prog) prog.style.width = pct.toFixed(1) + '%';
+        if (btn)  btn.innerHTML = `<span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')} 待機中...</span>`;
+      }, 500);
+    }
+
+    function render() {
+      const grid = document.getElementById('member-grid');
+      grid.innerHTML = '';
+      MEMBERS.forEach((m, i) => {
+        const s        = stamps[i] || 0;
+        const full     = s >= MAX_STAMPS;
+        const isOn     = presence[i] || false;
+        const joinAt   = joinedAts[i] || null;
+        const isJoining = !!joinAt;
+
+        if (isJoining && !tickTimers[i]) startTick(i);
+
+        let stampsHtml = '';
+        for (let j = 0; j < MAX_STAMPS; j++) {
+          if (j < s) {
+            stampsHtml += j === MAX_STAMPS - 1
+              ? `<div class="stamp earned-crown">👑</div>`
+              : `<div class="stamp earned">⭐</div>`;
+          } else {
+            stampsHtml += j === MAX_STAMPS - 1
+              ? `<div class="stamp" style="border-color:#fda085;color:#fda085;font-size:12px;">👑</div>`
+              : `<div class="stamp">○</div>`;
+          }
+        }
+
+        let btnRowHtml = '', progressHtml = '';
+        if (full) {
+          btnRowHtml = `<div class="btn-row"><button class="join-btn done" disabled>👑 ご褒美ずみ</button></div>`;
+        } else if (isJoining) {
+          const elapsed = Date.now() - joinAt;
+          const remain  = Math.max(0, WAIT_MS - elapsed);
+          const mins    = Math.floor(remain / 60000);
+          const secs    = Math.floor((remain % 60000) / 1000);
+          const pct     = Math.min(100, elapsed / WAIT_MS * 100);
+          progressHtml  = `<div class="progress-bar"><div class="progress-fill" id="prog-${i}" style="width:${pct.toFixed(1)}%"></div></div>`;
+          btnRowHtml    = `
+            <div class="btn-row">
+              <button class="join-btn waiting" id="btn-${i}" disabled>
+                <span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')} 待機中...</span>
+              </button>
+              <button class="cancel-btn" onclick="window.cancelTimer(${i})">✕ キャンセル</button>
+            </div>`;
+        } else {
+          btnRowHtml = `
+            <div class="btn-row">
+              <button class="join-btn" id="btn-${i}" onclick="window.handleJoin(${i})">🔥 本気トレ開始！</button>
+            </div>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = `member-card ${isOn ? 'online' : 'offline'}`;
+        card.innerHTML = `
+          <div class="member-top">
+            <div class="avatar-wrap">
+              <div class="avatar" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
+              <div class="presence-dot ${isOn ? 'online' : 'offline'}"></div>
+            </div>
+            <div class="member-info">
+              <div class="member-name-row">
+                <span class="member-name">${m.name}</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" ${isOn ? 'checked' : ''} onchange="window.togglePresence(${i}, this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="member-status">${full ? '👑 コンプリート！' : `${s}/${MAX_STAMPS} スタンプ`}</div>
+            </div>
+          </div>
+          <div class="stamps">${stampsHtml}</div>
+          ${progressHtml}
+          ${btnRowHtml}
+          <button class="reset-individual-btn" onclick="window.resetOne(${i})">🔄 ${m.name}をリセット</button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.handleJoin = function(i) {
+      if (joinedAts[i] || (stamps[i] || 0) >= MAX_STAMPS) return;
+      joinedAts[i] = Date.now();
+      set(joinedAtsRef, joinedAts);
+      startTick(i);
+      render();
+    };
+
+    window.bulkStart = function() {
+      const targets = MEMBERS.filter((_, i) =>
+        presence[i] && !joinedAts[i] && (stamps[i] || 0) < MAX_STAMPS
+      );
+      if (targets.length === 0) {
+        alert('入室中（緑）のメンバーがいないか、全員すでに計測中です。');
+        return;
+      }
+      const now = Date.now();
+      targets.forEach(m => { joinedAts[m.id] = now; startTick(m.id); });
+      set(joinedAtsRef, joinedAts);
+      render();
+    };
+
+    window.togglePresence = function(i, val) {
+      presence[i] = val;
+      set(presenceRef, presence);
+      render();
+    };
+
+    window.cancelTimer = function(i) {
+      if (!confirm(`${MEMBERS[i].name}さんの待機をキャンセルしますか？\n（スタンプはそのままです）`)) return;
+      if (tickTimers[i]) { clearInterval(tickTimers[i]); tickTimers[i] = null; }
+      joinedAts[i] = null;
+      set(joinedAtsRef, joinedAts);
+      render();
+    };
+
+    window.resetOne = function(i) {
+      if (!confirm(`${MEMBERS[i].name}さんのスタンプをリセットしますか？`)) return;
+      if (tickTimers[i]) { clearInterval(tickTimers[i]); tickTimers[i] = null; }
+      joinedAts[i] = null;
+      stamps[i]    = 0;
+      set(joinedAtsRef, joinedAts);
+      set(stampsRef,    stamps);
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
