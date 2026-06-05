@@ -285,7 +285,7 @@
   </div>
 
   <div class="bulk-start-area">
-    <button class="bulk-start-btn" onclick="window.bulkStart()">🔥 まとめて本気トレ開始！</button>
+    <button class="bulk-start-btn" id="bulk-start-btn" onclick="window.bulkStart()">🔥 まとめて本気トレ開始！</button>
   </div>
 
   <div id="reward-banner" class="reward-banner">
@@ -662,6 +662,14 @@
         `;
         grid.appendChild(card);
       });
+
+      // まとめてボタンのテキストを更新
+      const isBulkRunning = MEMBERS.some((_, i) => joinedAts[i] && joinedAts[i].mode === 'bulk');
+      const bulkBtn = document.getElementById('bulk-start-btn');
+      if (bulkBtn) {
+        bulkBtn.textContent = isBulkRunning ? '⏱ まとめて計測中！' : '🔥 まとめて本気トレ開始！';
+        bulkBtn.style.background = isBulkRunning ? '#888780' : '#1a1a18';
+      }
     }
 
     // 個人「本気トレ開始！」
