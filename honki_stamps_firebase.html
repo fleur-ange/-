@@ -672,9 +672,30 @@
       }
     }
 
+    // 明るいポップな音を鳴らす
+    function playStartSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [523, 659, 784, 1047]; // ド・ミ・ソ・ド（明るい和音）
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.3);
+          osc.start(ctx.currentTime + idx * 0.12);
+          osc.stop(ctx.currentTime + idx * 0.12 + 0.3);
+        });
+      } catch(e) {}
+    }
+
     // 個人「本気トレ開始！」
     window.handleJoin = function(i) {
       if (joinedAts[i] || (stamps[i] || 0) >= MAX_STAMPS) return;
+      playStartSound();
       joinedAts[i] = { time: Date.now(), mode: 'solo' };
       set(joinedAtsRef, joinedAts);
       startTick(i);
@@ -688,6 +709,7 @@
         alert('入室中（緑）のメンバーがいないか、全員すでに計測中です。');
         return;
       }
+      playStartSound();
       const now = Date.now();
       targets.forEach(m => { joinedAts[m.id] = { time: now, mode: 'bulk' }; startTick(m.id); });
       set(joinedAtsRef, joinedAts);
