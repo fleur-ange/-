@@ -864,7 +864,11 @@
           const secs    = Math.floor((remain % 60000) / 1000);
           const pct     = Math.min(100, elapsed / WEEKEND_WAIT_MS * 100);
           progressHtml = `<div class="weekend-progress"><div class="weekend-progress-fill" id="wprog-${i}" style="width:${pct.toFixed(1)}%"></div></div>`;
-          btnHtml = `<button class="weekend-btn w-waiting" id="wbtn-${i}" disabled><span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')}</span></button>`;
+          btnHtml = `
+            <div style="display:flex;gap:6px;">
+              <button class="weekend-btn w-waiting" id="wbtn-${i}" disabled style="flex:1"><span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')}</span></button>
+              <button class="weekend-btn" onclick="window.weekendCancel(${i})" style="border-color:#f09595;color:#A32D2D;padding:6px 8px;">✕</button>
+            </div>`;
         } else {
           btnHtml = `<button class="weekend-btn" onclick="window.weekendJoin(${i})">🔥 本気トレ開始！</button>`;
         }
@@ -890,6 +894,14 @@
       weekendJoinedAts[i] = Date.now();
       set(weekendJoinRef, weekendJoinedAts);
       startWeekendTick(i);
+      renderWeekend();
+    };
+
+    window.weekendCancel = function(i) {
+      if (!confirm('土日トレの計測をキャンセルしますか？\n（カウントはそのままです）')) return;
+      if (weekendTickTimers[i]) { clearInterval(weekendTickTimers[i]); weekendTickTimers[i] = null; }
+      weekendJoinedAts[i] = null;
+      set(weekendJoinRef, weekendJoinedAts);
       renderWeekend();
     };
 
