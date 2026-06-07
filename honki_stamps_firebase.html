@@ -793,12 +793,12 @@
     const WEEKEND_MAX = 12;
     const WEEKEND_WAIT_MS = 3 * 60 * 1000; // 3分
 
-    let weekendStamps  = [0, 0, 0, 0];
-    let weekendJoining = [false, false, false, false];
-    let weekendJoinedAt = [null, null, null, null];
-    let weekendTimers  = [null, null, null, null];
+    let weekendStamps   = [0, 0, 0, 0];
+    let weekendJoinedAts = [null, null, null, null]; // Firebaseで管理
+    let weekendTickTimers = [null, null, null, null];
 
-    const weekendRef = ref(db, 'weekendStamps');
+    const weekendRef      = ref(db, 'weekendStamps');
+    const weekendJoinRef  = ref(db, 'weekendJoinedAts');
 
     onValue(weekendRef, (snapshot) => {
       const data = snapshot.val();
@@ -806,17 +806,59 @@
       renderWeekend();
     });
 
+    onValue(weekendJoinRef, (snapshot) => {
+      const data = snapshot.val();
+      const prev = [...weekendJoinedAts];
+      weekendJoinedAts = data ? data : [null, null, null, null];
+      MEMBERS.forEach((_, i) => {
+        if (weekendJoinedAts[i] && !prev[i]) startWeekendTick(i);
+        if (!weekendJoinedAts[i] && weekendTickTimers[i]) {
+          clearInterval(weekendTickTimers[i]);
+          weekendTickTimers[i] = null;
+        }
+      });
+      renderWeekend();
+    });
+
+    function startWeekendTick(i) {
+      if (weekendTickTimers[i]) clearInterval(weekendTickTimers[i]);
+      weekendTickTimers[i] = setInterval(() => {
+        if (!weekendJoinedAts[i]) { clearInterval(weekendTickTimers[i]); weekendTickTimers[i] = null; return; }
+        const elapsed = Date.now() - weekendJoinedAts[i];
+        const pct     = Math.min(100, elapsed / WEEKEND_WAIT_MS * 100);
+        const remain  = Math.max(0, WEEKEND_WAIT_MS - elapsed);
+        const mins    = Math.floor(remain / 60000);
+        const secs    = Math.floor((remain % 60000) / 1000);
+        const prog = document.getElementById(`wprog-${i}`);
+        const btn  = document.getElementById(`wbtn-${i}`);
+        if (prog) prog.style.width = pct.toFixed(1) + '%';
+        if (btn)  btn.innerHTML = `<span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')}</span>`;
+
+        if (elapsed >= WEEKEND_WAIT_MS) {
+          clearInterval(weekendTickTimers[i]); weekendTickTimers[i] = null;
+          weekendStamps[i]    = (weekendStamps[i] || 0) + 1;
+          weekendJoinedAts[i] = null;
+          set(weekendRef,     weekendStamps);
+          set(weekendJoinRef, weekendJoinedAts);
+          renderWeekend();
+        }
+      }, 500);
+    }
+
     function renderWeekend() {
       const grid = document.getElementById('weekend-grid');
       if (!grid) return;
       grid.innerHTML = '';
       MEMBERS.forEach((m, i) => {
-        const count = weekendStamps[i] || 0;
-        const isJoining = weekendJoining[i];
+        const count     = weekendStamps[i] || 0;
+        const joinAt    = weekendJoinedAts[i] || null;
+        const isJoining = !!joinAt;
+
+        if (isJoining && !weekendTickTimers[i]) startWeekendTick(i);
 
         let btnHtml = '', progressHtml = '';
         if (isJoining) {
-          const elapsed = Date.now() - weekendJoinedAt[i];
+          const elapsed = Date.now() - joinAt;
           const remain  = Math.max(0, WEEKEND_WAIT_MS - elapsed);
           const mins    = Math.floor(remain / 60000);
           const secs    = Math.floor((remain % 60000) / 1000);
@@ -843,31 +885,12 @@
     }
 
     window.weekendJoin = function(i) {
-      if (weekendJoining[i]) return;
-      weekendJoining[i]  = true;
-      weekendJoinedAt[i] = Date.now();
+      if (weekendJoinedAts[i]) return;
+      playStartSound();
+      weekendJoinedAts[i] = Date.now();
+      set(weekendJoinRef, weekendJoinedAts);
+      startWeekendTick(i);
       renderWeekend();
-
-      weekendTimers[i] = setInterval(() => {
-        const elapsed = Date.now() - weekendJoinedAt[i];
-        const pct     = Math.min(100, elapsed / WEEKEND_WAIT_MS * 100);
-        const remain  = Math.max(0, WEEKEND_WAIT_MS - elapsed);
-        const mins    = Math.floor(remain / 60000);
-        const secs    = Math.floor((remain % 60000) / 1000);
-        const prog = document.getElementById(`wprog-${i}`);
-        const btn  = document.getElementById(`wbtn-${i}`);
-        if (prog) prog.style.width = pct.toFixed(1) + '%';
-        if (btn)  btn.innerHTML = `<span class="timer-txt">⏱ ${mins}:${secs.toString().padStart(2,'0')}</span>`;
-
-        if (elapsed >= WEEKEND_WAIT_MS) {
-          clearInterval(weekendTimers[i]);
-          weekendJoining[i]  = false;
-          weekendJoinedAt[i] = null;
-          weekendStamps[i]   = (weekendStamps[i] || 0) + 1;
-          set(weekendRef, weekendStamps);
-          renderWeekend();
-        }
-      }, 500);
     };
 
     renderWeekend();
